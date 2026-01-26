@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v7.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v7.0": {
+      "Aircraft_Voice_Warning_System_for_Warthunder_on_Linux/1.0.0": {
+        "runtime": {
+          "Aircraft_Voice_Warning_System_for_Warthunder_on_Linux.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Aircraft_Voice_Warning_System_for_Warthunder_on_Linux/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
