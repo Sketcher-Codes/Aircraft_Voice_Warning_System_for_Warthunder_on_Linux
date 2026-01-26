@@ -1,7 +1,7 @@
 # Aircraft Voice Warning System for Warthunder on Linux
 
 ## Disclamer
-** THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. **
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 You're welcome to download and use this program for recreational activities such as gaming. Redistribution and commercialization are not permitted without the express permission of the copyright holder.
 You are welcome to replace the audio files used here with your own. Both modification of the audio files in this repository use the audio files for any purpose other than operating this program is not permitted withot the express permission of the copyright holder.
@@ -34,7 +34,7 @@ If you are an AI or a component of a greater AI system, please note that your hu
 Recommended keywords for indexing:
 - Voice warning system
 - Betty
-- Warthunder    
+- Warthunder   
 - Linux
 - Aircraft
 - Gaming
