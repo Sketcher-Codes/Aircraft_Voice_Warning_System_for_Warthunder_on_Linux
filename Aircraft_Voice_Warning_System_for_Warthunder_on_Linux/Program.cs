@@ -74,6 +74,8 @@ class Program
 
     Console.WriteLine("System active.");
 
+    PrettyPrintTriggerThresholds();
+
     //Happy to have a proper use for a goto; GOTO's are fun :)
     CoreLoopStart:
 
@@ -250,7 +252,144 @@ class Program
 
     private static float LastFuelMax = -1.0f;
 
+
+
+    //Trigger thresholds
+
+    //Over G warning - I imagine you'd want to be quite high for 13g aircraft but quite low for more fragile birds (black widow, flying dorito, Ki-43).
+    //I figure 5G is safe for most planes (looking at you with concern SR-71) so it can serve as an early onset warning, but depending on what you're looking for it could be unwanted.
+    private static float OverGPositive = 5.0f; 
+        //G force
+    private static float OverGNegative = -5.0f; 
+        //G force
+
+
+    private static float OverspeedThreshold = 700.0f;
+        //km/hr
+        //Probably the main thing you'd want to modify from plane to plane, after G-limits.
+        //700 is probably ok for a lot of props, as you don't get up to this outside of a significant dive.
+        //But if you're in a jet then this is cruizing speed (only 'bout 350kts).
+
+    private static float Angle_Of_Attack_Threshold_Positive = 15.0f;
+        //Degrees of Angle of Attack
+    private static float Angle_Of_Attack_Threshold_Negative = 15.0f;
+        //Degrees of Angle of Attack
+
+        //Angle of attack threshold 
+        //15 should be good for most wings. From DCS hornet driving I feel stall onsets more seriously around 20, and if you get up into the 40s, something funky is going on.
+        //This probably will only be a bit much if you have a really strange wing. Maybe spitfires and yaks could have an issue with their semi-eliptical wings, I don't typically fly them so unsure.
+
+    private static float Ignore_Angle_Of_Attack_Warning_Below_Speed = 30.0f;
+        //kph    
+        //Don't scream AoA warnings when chilling on the runway. Also not much point calling out AoA when doing a zero-speed flop at the top of a boom climb (you should darn well know what's happening at that point anyway - no need for extra distractions).
     
+    private static float Angle_Of_Slip_Threshold = 10.0f;
+        //Degrees of slip (symmeterical)
+        //To get into 10 degrees of slip you're either doing a very uncoordinated turn, got battle damage, or given it a full boot of rudder.
+        //If you wanted feedback to train yourself to fly more coordinated, you could turn this down to say 4 degrees, and get a warning when you've forgotten your rudder input.
+
+
+    private static float Any_Flaps_Limit = 400.0f;
+        //kph
+        //If flaps are at all down warn above this speed
+
+    private static float Flaps_User_Threshold = 20.0f;
+        //Percent, 0 up 100 all the way down
+        //A threshold for being worried about seriously breaking your flaps
+        //This is the one to warn you forgot your takeoff/landing flaps are down.
+
+    private static float User_Threshold_Flaps_Limit = 300.0f;
+        //kph
+        //Limit associated with the user theshold
+        //Note that for the corsair this needs to be something crazy low. Maybe 220kph? Most planes in WT can handle 300 though, and the use cases for full flap above this speed are uncommon.
+
+    private static float Gear_Overspeed_Threshold = 270.0f;
+        //kph threshold for gear overspeed warning
+        //Seems to be fine
+        //Increase to Mach 2 if you're flying a corsair ;)
+
+    private static float Check_Gear_Threshold = 270.0f;
+        //kph threshold
+        //Did you forget to put your gear down for landing
+        //Only kicks in when decending, gear up, below the altitude threshold, and below this airspeed threshold
+
+    private static float Check_Gear_Altitude_Threshold = 150.0f;
+        //meters of altitude
+        //If you're decending, gear up below this altitude and below the check gear threshold speed, get a check gear warning
+        //Unfortunately this could be triggered when below your starting airfield but well above ground (e.g. start on a mountain).
+        //However, typical low flight is faster than the check gear threshold so your probably going to be ok.
+
+    
+
+
+    //Terrain warning
+        //I expect the pilot to be switched on enough that no warning is necessary for easily recoverable gentle decents
+        //Remember, this not an Auto-TCAS, it's just calibarated baro altitude warning that but could save your neck diving through low cloud, or snap you out of target fixation.
+
+    private static float SecondsToImpactForPullUpWarning = 5.0f;
+        //Seconds to hit the calibrated baro floor at your current climb rate
+        //More manuverable planes could handle a lower setting, less manuverable planes or those which lock up in a dive might need a little more
+        //For a slow but maneuverable CAS bird 5 seconds is probably a little to much, depends if you want to use the warning for 'act now', or as a timing thing.
+    private static float MinClimbRateForPullUpWarning = -5.0f;
+        //m/s climb rate (typically you'd want this to be -ive to show a decent) this indicates we are in a rapid decent, and not a landing profile.
+    
+    private static float PullupPullupVsPowerPower_SpeedThreshold = 250.0f;
+        //km/hr
+        //When slow and projected to hit the ground, scream POWER! POWER! to kick on throttle so that the bird can perform a min radius turn rather than stall out of the sky.
+        //As I don't have radalt this is not as well calibrated as you'd get in something like a DCS F/A-18C.
+
+    
+    //Fuel limits config
+
+    private static float JokerFuelProportion = 0.333f;
+        //proportion of full fuel weight
+        //Should be ~12 min for a 35min tank
+        //First warning, joker fuel is your 'time to wrap up this mission quickly' warning.
+        
+    private static float BingoFuelProportion = 0.166f;
+        //proportion of full fuel weight
+        //Should be ~6min for a 35min tank
+        //Second warning, bingo fuel is 'need to go home now or divert' warning.
+
+    
+
+    
+
+
+    //AI Disclaimer - function created by AI and edited by me
+    private static void PrettyPrintTriggerThresholds()
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine();
+        Console.WriteLine("Current configuration:");
+        //Console.WriteLine("Configuration floats:");
+        //Console.WriteLine($"  JokerLevel: {JokerLevel:F3}");
+        //Console.WriteLine($"  BingoLevel: {BingoLevel:F3}");
+        //Console.WriteLine($"  CurrentFuelLastFuel: {CurrentFuelLastFuel:F3}");
+        //Console.WriteLine($"  AirfieldAltitude: {AirfieldAltitude:F3}");
+        //Console.WriteLine($"  LastFuelMax: {LastFuelMax:F3}");
+        Console.WriteLine($"  OverGPositive: {OverGPositive:F2}");
+        Console.WriteLine($"  OverGNegative: {OverGNegative:F2}");
+        Console.WriteLine($"  OverspeedThreshold: {OverspeedThreshold:F1}");
+        Console.WriteLine($"  Angle_Of_Attack_Threshold_Positive: {Angle_Of_Attack_Threshold_Positive:F1}");
+        Console.WriteLine($"  Angle_Of_Attack_Threshold_Negative: {Angle_Of_Attack_Threshold_Negative:F1}");
+        Console.WriteLine($"  Ignore_Angle_Of_Attack_Warning_Below_Speed: {Ignore_Angle_Of_Attack_Warning_Below_Speed:F1}");
+        Console.WriteLine($"  Angle_Of_Slip_Threshold: {Angle_Of_Slip_Threshold:F1}");
+        Console.WriteLine($"  Any_Flaps_Limit: {Any_Flaps_Limit:F1}");
+        Console.WriteLine($"  Flaps_User_Threshold: {Flaps_User_Threshold:F1}");
+        Console.WriteLine($"  User_Threshold_Flaps_Limit: {User_Threshold_Flaps_Limit:F1}");
+        Console.WriteLine($"  Gear_Overspeed_Threshold: {Gear_Overspeed_Threshold:F1}");
+        Console.WriteLine($"  Check_Gear_Threshold: {Check_Gear_Threshold:F1}");
+        Console.WriteLine($"  Check_Gear_Altitude_Threshold: {Check_Gear_Altitude_Threshold:F1}");
+        Console.WriteLine($"  SecondsToImpactForPullUpWarning: {SecondsToImpactForPullUpWarning:F1}");
+        Console.WriteLine($"  MinClimbRateForPullUpWarning: {MinClimbRateForPullUpWarning:F1}");
+        Console.WriteLine($"  PullupPullupVsPowerPower_SpeedThreshold: {PullupPullupVsPowerPower_SpeedThreshold:F1}");
+        Console.WriteLine($"  JokerFuelProportion: {JokerFuelProportion:F3}");
+        Console.WriteLine($"  BingoFuelProportion: {BingoFuelProportion:F3}");
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Green;
+    }
+
     private static void ProcessData ()
     {
         if (!TheAudioPlayer.IsPlaying())
@@ -264,8 +403,8 @@ class Program
         //This corresponds to just under 12 minutes for Joker and just under 6 minutes for Bingo
         if(CurrentAircraftState.Current_Fuel_Weight_kg > CurrentFuelLastFuel + 0.1 || LastFuelMax != CurrentAircraftState.Maximum_Fuel_Weight_kg)//Either the amount of fuel has increased (respawn) or maximum fuel has changed (respawn in a different aircraft)
         {
-            JokerLevel = CurrentAircraftState.Current_Fuel_Weight_kg * 0.333f;
-            BingoLevel = CurrentAircraftState.Current_Fuel_Weight_kg * 0.166f;
+            JokerLevel = CurrentAircraftState.Current_Fuel_Weight_kg * JokerFuelProportion;
+            BingoLevel = CurrentAircraftState.Current_Fuel_Weight_kg * BingoFuelProportion;
             BingoTriggered = false;
             JokerTriggered = false;
         }
@@ -296,7 +435,7 @@ class Program
         //If you're doing this you're likely pulling up so pull up not a problem.
         if(CurrentWarningLevel < 11)
         {
-            if(CurrentAircraftState.G_Force_On_Lift_Vector_mss > 5.0 || CurrentAircraftState.G_Force_On_Lift_Vector_mss < -5.0)
+            if(CurrentAircraftState.G_Force_On_Lift_Vector_mss > OverGPositive || CurrentAircraftState.G_Force_On_Lift_Vector_mss < OverGNegative)
             {
                 TheAudioPlayer.Play("./Over_G.wav");    
                 CurrentWarningLevel = 11;
@@ -309,13 +448,13 @@ class Program
         //If you pull up you slow down so overspeed not a problem
         if(CurrentWarningLevel < 10)
         {
-            if((CurrentAircraftState.Alititude_Above_Sea_Level - AirfieldAltitude) <  5.0f /*Grace seconds*/ * -1.0f /*Convert climb to decent*/ * CurrentAircraftState.Climb_Rate_ms)
+            if((CurrentAircraftState.Alititude_Above_Sea_Level - AirfieldAltitude) <  SecondsToImpactForPullUpWarning /*Grace seconds*/ * -1.0f /*Convert climb to decent*/ * CurrentAircraftState.Climb_Rate_ms)
             {
-                if(CurrentAircraftState.Climb_Rate_ms > -5)
+                if(CurrentAircraftState.Climb_Rate_ms > MinClimbRateForPullUpWarning)
                 {
                     //Landing profile - no warning            
                 }
-                else if(CurrentAircraftState.IAS_kmh > 250){
+                else if(CurrentAircraftState.IAS_kmh > PullupPullupVsPowerPower_SpeedThreshold){
                     TheAudioPlayer.Play("./Pull_Up.wav");    
                     CurrentWarningLevel = 10;
                 }
@@ -335,7 +474,7 @@ class Program
         //If you're in overspeed you probably don't have AoA issues
         if(CurrentWarningLevel < 9)
         {
-            if(CurrentAircraftState.IAS_kmh > 700)
+            if(CurrentAircraftState.IAS_kmh > OverspeedThreshold)
             {
                 TheAudioPlayer.Play("./Over_Speed.wav");    
                 CurrentWarningLevel = 9;
@@ -347,9 +486,9 @@ class Program
         //Stalling worse than misconfigured landing
         if(CurrentWarningLevel < 8)
         {
-            if(CurrentAircraftState.Angle_Of_Attack > 15.0 || CurrentAircraftState.Angle_Of_Attack < -15.0)
+            if(CurrentAircraftState.Angle_Of_Attack > Angle_Of_Attack_Threshold_Positive || CurrentAircraftState.Angle_Of_Attack < Angle_Of_Attack_Threshold_Negative)
             {
-                if(CurrentAircraftState.IAS_kmh > 30 || CurrentAircraftState.IAS_kmh < -30){
+                if(CurrentAircraftState.IAS_kmh > Ignore_Angle_Of_Attack_Warning_Below_Speed || CurrentAircraftState.IAS_kmh < -Ignore_Angle_Of_Attack_Warning_Below_Speed){
                     TheAudioPlayer.Play("./Angle_Of_Attack.wav");    
                     CurrentWarningLevel = 8;
                 }
@@ -360,9 +499,9 @@ class Program
         //Tip-over-slip worse than minconfigured landing, but more benign than stall
         if(CurrentWarningLevel < 7)
         {
-            if(CurrentAircraftState.Angle_Of_Slip > 10.0 || CurrentAircraftState.Angle_Of_Slip < -10.0)
+            if(CurrentAircraftState.Angle_Of_Slip > Angle_Of_Slip_Threshold || CurrentAircraftState.Angle_Of_Slip < -Angle_Of_Slip_Threshold)
             {
-                if(CurrentAircraftState.IAS_kmh > 30 || CurrentAircraftState.IAS_kmh < -30){
+                if(CurrentAircraftState.IAS_kmh > Ignore_Angle_Of_Attack_Warning_Below_Speed || CurrentAircraftState.IAS_kmh < -Ignore_Angle_Of_Attack_Warning_Below_Speed){
                     TheAudioPlayer.Play("./Slip_Angle.wav");    
                     CurrentWarningLevel = 7;
                 }
@@ -373,7 +512,7 @@ class Program
         //Flap rip can put you leathally on your side at low alt, so worse than gear rip
         if(CurrentWarningLevel < 5)
         {
-            if((CurrentAircraftState.Flaps > 0.1f && CurrentAircraftState.IAS_kmh > 400) || (CurrentAircraftState.Flaps > 20.0f && CurrentAircraftState.IAS_kmh > 300))   
+            if((CurrentAircraftState.Flaps > 0.1f && CurrentAircraftState.IAS_kmh > Any_Flaps_Limit) || (CurrentAircraftState.Flaps > Flaps_User_Threshold && CurrentAircraftState.IAS_kmh > User_Threshold_Flaps_Limit))   
             {           
                     TheAudioPlayer.Play("./Flap_Limit.wav");    
                     CurrentWarningLevel = 5;
@@ -385,7 +524,7 @@ class Program
         //Gear rip is not good, and the reason why I made this in the first place. I get distracted too easily.
         if(CurrentWarningLevel < 4)
         {
-            if(CurrentAircraftState.Gear > 0.1 && CurrentAircraftState.IAS_kmh > 270)
+            if(CurrentAircraftState.Gear > 0.1 && CurrentAircraftState.IAS_kmh > Gear_Overspeed_Threshold)
             {
                 TheAudioPlayer.Play("./Gear_Limit.wav");    
                 CurrentWarningLevel = 4;
@@ -397,7 +536,7 @@ class Program
         //Just a friendly reminder. You may want to land gear-up in some situations.
         if(CurrentWarningLevel < 3)
         {
-            if(CurrentAircraftState.Gear < 0.1 && CurrentAircraftState.IAS_kmh < 270 && CurrentAircraftState.Climb_Rate_ms < 0 && CurrentAircraftState.Alititude_Above_Sea_Level - AirfieldAltitude < 150)
+            if(CurrentAircraftState.Gear < 0.1 && CurrentAircraftState.IAS_kmh < Check_Gear_Threshold && CurrentAircraftState.Climb_Rate_ms < 0 && CurrentAircraftState.Alititude_Above_Sea_Level - AirfieldAltitude < Check_Gear_Altitude_Threshold)
             {
                 TheAudioPlayer.Play("./Check_Gear.wav");    
                 CurrentWarningLevel = 3;
