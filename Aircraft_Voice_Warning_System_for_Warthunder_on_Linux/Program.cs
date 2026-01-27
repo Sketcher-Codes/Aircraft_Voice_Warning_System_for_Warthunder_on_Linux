@@ -1,4 +1,20 @@
-﻿//This program reads in the 'browser map' data that warthunder emits to provide a voice warnings.
+﻿//Future plans
+//Incorporate a file loader that reads in parameters in the easy format
+//TEXT | NUMBER \r\n
+//And stores them in a dictionary, then uses string matching to fill out the thresholds for each trigger
+//Have a special 'DEFAULT_PARAMETERS' file that always loads first (if it exists) to set the defaults for every aeroplane
+//But then override with the specific plane if we have a parameter file for it
+//I note that one of the WT endpoints (might be indicators or something) has the vehicle name, we can match that to the
+//file name with that and have a way to link presets to particular aircrafts
+//I might have most of the USA and German prop planes, but I certainly don't have everything so I can't make presets for them all even if I wanted to
+//Will seek to set up some defaults, maybe make it easy to copy-paste something that is similar, and make it possible (even if it means opening a file in a scary text-editor)
+//to roll your own.
+//I also reckon that end users might not agree with my taste in thresolds for a particualr plane, some may only want to be warned last-moment while others may want to hear the warning super-early.
+//I'm not planning to add the complexity of toggling on/off warnings at this stage, as you can do that by replacing the sound file with a silent one.
+
+
+
+//This program reads in the 'browser map' data that warthunder emits to provide a voice warnings.
 //You can swith out the voice warnings with your own just by swapping out the wav files in the same folder as the executable.
 
 
@@ -39,79 +55,99 @@ class Program
 
     static private AudioPlayer TheAudioPlayer = new AudioPlayer();
 
+
+    static private bool PrintDebug = false;
+
+
+
     static void Main(string[] args)
     {        
-    Console.ForegroundColor = ConsoleColor.White;
-    Console.BackgroundColor = ConsoleColor.Black;
-    Console.WriteLine(@"THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.");
-    Console.WriteLine("");
-    Console.ForegroundColor = ConsoleColor.White;
-    Console.BackgroundColor = ConsoleColor.DarkBlue;
-    Console.WriteLine("Aircraft Voice Warning System for Warthunder on Linux.");
-    Console.WriteLine("Programmed in Australia, with booring parts delegated to AI, and checked by a real live human.");
-    Console.WriteLine("");    
+    
+        PrintPreamble_AndInit(args);
 
+        Console.WriteLine("System active.");
 
-    bool PrintDebug = false;
-    if(args.Length > 0){
-        SortedSet<string> ArgsSorted = new SortedSet<string>();
-        foreach(string arg in args)
-        {
-            ArgsSorted.Add(arg.ToUpperInvariant());
-        }
-            if (ArgsSorted.Contains("DEBUG"))
+        //In future I could extend to have main loop run on a seperate thread and the possiblity for typing input into the console
+        //E.g. manual calibration of barometric warning floor
+
+        RunMainLoop();
+
+    }
+
+    private static void PrintPreamble_AndInit(string [] args){
+             Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.WriteLine(@"THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.");
+            Console.WriteLine("");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.WriteLine("Aircraft Voice Warning System for Warthunder on Linux.");
+            Console.WriteLine("Programmed in Australia, with booring parts delegated to AI, and checked by a real live human.");
+            Console.WriteLine("");    
+            
+            if(args.Length > 0){
+                SortedSet<string> ArgsSorted = new SortedSet<string>();
+                foreach(string arg in args)
+                {
+                    ArgsSorted.Add(arg.ToUpperInvariant());
+                }
+                    if (ArgsSorted.Contains("DEBUG"))
+                    {
+                        PrintDebug = true;
+                    }
+            }
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.BackgroundColor = ConsoleColor.Black;
+
+            Console.WriteLine("Precaching Sounds:");
+            
+            PrecacheSounds();
+    }
+
+    private static void RunMainLoop(){
+        PrettyPrintTriggerThresholds();
+
+        //Happy to have a proper use for a goto; GOTO's are fun :)
+        CoreLoopStart:
+
+            try{
+
+            //Wait to not spam
+            Spinwait();
+
+            //Get Input
+            if (!RecieveData())
             {
-                PrintDebug = true;
-            }
-    }
-
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.BackgroundColor = ConsoleColor.Black;
-
-    Console.WriteLine("Precaching Sounds:");
-     
-    PrecacheSounds();
-
-    Console.WriteLine("System active.");
-
-    PrettyPrintTriggerThresholds();
-
-    //Happy to have a proper use for a goto; GOTO's are fun :)
-    CoreLoopStart:
-
-        try{
-
-        //Wait to not spam
-        Spinwait();
-
-        //Get Input
-        if (!RecieveData())
-        {
-            goto CoreLoopStart;    
-        }
-
-        ////Debug print
-        //CurrentAircraftState.PrintState();
-
-        //Action
-        ProcessData();
-
-        }
-        catch(Exception ex)
-        {
-            if(PrintDebug){
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Encountered an error");
-                Console.WriteLine(ex.ToString());
-                Console.ForegroundColor = ConsoleColor.Green;
+                goto CoreLoopStart;    
             }
 
-            goto CoreLoopStart;    
-        }
-        goto CoreLoopStart;
+            ////Debug print
+            //CurrentAircraftState.PrintState();
 
+            //Action
+            ProcessData();
 
+            }
+            catch(Exception ex)
+            {
+                if(PrintDebug){
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Encountered an error");
+                    Console.WriteLine(ex.ToString());
+                    Console.ForegroundColor = ConsoleColor.Green;
+                }
+
+                goto CoreLoopStart;    
+            }
+            goto CoreLoopStart;
     }
+
+
+
+
+
+
 
     private static void Spinwait()
     {
@@ -362,12 +398,6 @@ class Program
         Console.ForegroundColor = ConsoleColor.Yellow;
         Console.WriteLine();
         Console.WriteLine("Current configuration:");
-        //Console.WriteLine("Configuration floats:");
-        //Console.WriteLine($"  JokerLevel: {JokerLevel:F3}");
-        //Console.WriteLine($"  BingoLevel: {BingoLevel:F3}");
-        //Console.WriteLine($"  CurrentFuelLastFuel: {CurrentFuelLastFuel:F3}");
-        //Console.WriteLine($"  AirfieldAltitude: {AirfieldAltitude:F3}");
-        //Console.WriteLine($"  LastFuelMax: {LastFuelMax:F3}");
         Console.WriteLine($"  OverGPositive: {OverGPositive:F2}");
         Console.WriteLine($"  OverGNegative: {OverGNegative:F2}");
         Console.WriteLine($"  OverspeedThreshold: {OverspeedThreshold:F1}");
