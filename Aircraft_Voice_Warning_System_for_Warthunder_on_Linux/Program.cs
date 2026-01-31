@@ -37,6 +37,8 @@ class Program
     static private HttpClient DataInHttpClient = new HttpClient();
     static private Uri StateDataInEndpoint = new Uri("http://localhost:8111/state");
 
+    static private Uri IndicatorDataInEndpoint = new Uri("http://localhost:8111/indicators");
+
     static private Task<HttpResponseMessage>? DataInTask;
 
     static private HttpResponseMessage? DataInTaskResult;
@@ -75,7 +77,7 @@ class Program
     }
 
     private static void PrintPreamble_AndInit(string [] args){
-             Console.ForegroundColor = ConsoleColor.White;
+            Console.ForegroundColor = ConsoleColor.White;
             Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine(@"THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.");
             Console.WriteLine("");
@@ -84,6 +86,17 @@ class Program
             Console.WriteLine("Aircraft Voice Warning System for Warthunder on Linux.");
             Console.WriteLine("Programmed in Australia, with booring parts delegated to AI, and checked by a real live human.");
             Console.WriteLine("");    
+
+         /*   for(int i = 0; i < 100; i++)
+            {
+                System.Threading.Thread.Sleep(200);
+                Console.Write(".");
+            }*/
+
+            Console.WriteLine("");    
+            Console.WriteLine("");    
+
+
             
             if(args.Length > 0){
                 SortedSet<string> ArgsSorted = new SortedSet<string>();
@@ -106,6 +119,8 @@ class Program
     }
 
     private static void RunMainLoop(){
+
+        TryToLoadAircraftParameters("Custom_Defaults.txt");
         PrettyPrintTriggerThresholds();
 
         //Happy to have a proper use for a goto; GOTO's are fun :)
@@ -164,7 +179,7 @@ class Program
         }
     }
 
-
+    static string LastType = "";
 
     //This gets the aircraft's state
     //There's other endpoints that I could also pull additional data from in a future iteration.
@@ -259,6 +274,56 @@ class Program
                     break;
             }
         }
+
+
+
+
+        DataInTask = DataInHttpClient.GetAsync(IndicatorDataInEndpoint);
+
+        DataInTask.Wait();
+
+        if (!DataInTask.IsCompletedSuccessfully)
+        {
+            return false;
+        }
+
+        DataInTaskResult = DataInTask.Result;
+
+        DataInContentStream = DataInTaskResult.Content.ReadAsStream();
+
+        TextDataInStream = new StreamReader(DataInContentStream);
+
+        TextInComplete = TextDataInStream.ReadToEnd();
+
+        StateChunks = TextInComplete.Split(StateSplitters, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach(string Chunk in StateChunks)
+        {     
+
+            string [] Elements = Chunk.Split(ItemSplitters, StringSplitOptions.RemoveEmptyEntries);
+
+            if(Elements.Length != 2)
+            {
+                continue;
+            }
+
+            switch (Elements[0]){
+                case "type":
+                    //Special logic for identifying 'Type' change                    
+                    if(Elements[1] != LastType)
+                    {
+                        CurrentAircraftState.Type = Elements[1];
+                        LastType = Elements[1];
+                        TryToLoadAircraftParameters(CurrentAircraftState.Type);
+                        PrettyPrintTriggerThresholds();
+                    }
+                    break;
+            }
+
+            
+
+        }
+
 
 
 
@@ -627,6 +692,92 @@ class Program
         TheAudioPlayer.Precache("./Joker_Fuel.wav");
     }
 
+    static private string [] ParamFileSplitters = new string [] {"\r\n","\n","\r"};
+
+    static private string [] ParamLineSplitters = new string [] {"|"};
+
+    public static void TryToLoadAircraftParameters(string AircraftName)
+    {
+        string PrettyName = AircraftName.Replace("\"", "");
+        if(LoadAircraftParameters(PrettyName)) return;
+        if(LoadAircraftParameters(PrettyName + ".txt")) return;
+        if(LoadAircraftParameters(AircraftName)) return;
+        if(LoadAircraftParameters(AircraftName + ".txt")) return;
+        if(LoadAircraftParameters("Default_Thresholds.txt")) return;
+    }
+
+    private static bool LoadAircraftParameters(string FileName)
+    {
+        string FileToLoad = "./" + FileName;
+        if(!File.Exists(FileToLoad))
+        {
+            Console.WriteLine("Cannot find the file " + FileToLoad + " load failed.");
+            return false;
+        }
+        Console.WriteLine("Loading " + FileToLoad);
+
+        string FileData = File.ReadAllText(FileToLoad);
+
+        string [] FileLines = FileData.Split(ParamFileSplitters, StringSplitOptions.RemoveEmptyEntries);
+
+        Dictionary<string, float> FileInformation = new Dictionary<string, float>();
+        foreach(string Line in FileLines)
+        {            
+            
+            if(Line.Length < 1)
+            {
+                Console.WriteLine(Line.Length);
+                continue;
+            }
+
+            
+            string [] LineSplit = Line.Split(ParamLineSplitters, StringSplitOptions.RemoveEmptyEntries);
+            
+            
+            if(LineSplit.Length != 2)
+            {
+                break;
+            }
+            
+            if(LineSplit[0].Length < 1)
+            {
+                continue;
+            }
+            if(LineSplit[1].Length < 1)
+            {
+                continue;
+            }            
+            float Data;            
+            if(!float.TryParse(LineSplit[1].Trim() , out Data))
+            {
+                continue;
+            }
+            FileInformation[LineSplit[0]] = Data;
+
+        }
+
+        if(FileInformation.ContainsKey("OverGPositive")){ OverGPositive = FileInformation["OverGPositive"]; }
+        if(FileInformation.ContainsKey("OverGNegative")){ OverGNegative = FileInformation["OverGNegative"]; }
+        if(FileInformation.ContainsKey("OverspeedThreshold")){ OverspeedThreshold = FileInformation["OverspeedThreshold"]; }
+        if(FileInformation.ContainsKey("Angle_Of_Attack_Threshold_Positive")){ Angle_Of_Attack_Threshold_Positive = FileInformation["Angle_Of_Attack_Threshold_Positive"]; }
+        if(FileInformation.ContainsKey("Angle_Of_Attack_Threshold_Negative")){ Angle_Of_Attack_Threshold_Negative = FileInformation["Angle_Of_Attack_Threshold_Negative"]; }
+        if(FileInformation.ContainsKey("Ignore_Angle_Of_Attack_Warning_Below_Speed")){ Ignore_Angle_Of_Attack_Warning_Below_Speed = FileInformation["Ignore_Angle_Of_Attack_Warning_Below_Speed"]; }
+        if(FileInformation.ContainsKey("Angle_Of_Slip_Threshold")){ Angle_Of_Slip_Threshold = FileInformation["Angle_Of_Slip_Threshold"]; }
+        if(FileInformation.ContainsKey("Any_Flaps_Limit")){ Any_Flaps_Limit = FileInformation["Any_Flaps_Limit"]; }
+        if(FileInformation.ContainsKey("Flaps_User_Threshold")){ Flaps_User_Threshold = FileInformation["Flaps_User_Threshold"]; }
+        if(FileInformation.ContainsKey("User_Threshold_Flaps_Limit")){ User_Threshold_Flaps_Limit = FileInformation["User_Threshold_Flaps_Limit"]; }
+        if(FileInformation.ContainsKey("Gear_Overspeed_Threshold")){ Gear_Overspeed_Threshold = FileInformation["Gear_Overspeed_Threshold"]; }
+        if(FileInformation.ContainsKey("Check_Gear_Threshold")){ Check_Gear_Threshold = FileInformation["Check_Gear_Threshold"]; }
+        if(FileInformation.ContainsKey("Check_Gear_Altitude_Threshold")){ Check_Gear_Altitude_Threshold = FileInformation["Check_Gear_Altitude_Threshold"]; }
+        if(FileInformation.ContainsKey("SecondsToImpactForPullUpWarning")){ SecondsToImpactForPullUpWarning = FileInformation["SecondsToImpactForPullUpWarning"]; }
+        if(FileInformation.ContainsKey("MinClimbRateForPullUpWarning")){ MinClimbRateForPullUpWarning = FileInformation["MinClimbRateForPullUpWarning"]; }
+        if(FileInformation.ContainsKey("PullupPullupVsPowerPower_SpeedThreshold")){ PullupPullupVsPowerPower_SpeedThreshold = FileInformation["PullupPullupVsPowerPower_SpeedThreshold"]; }
+        if(FileInformation.ContainsKey("JokerFuelProportion")){ JokerFuelProportion = FileInformation["JokerFuelProportion"]; }
+        if(FileInformation.ContainsKey("BingoFuelProportion")){ BingoFuelProportion = FileInformation["BingoFuelProportion"]; }
+
+        return true;
+    }
+
 
 
 }
@@ -657,6 +808,8 @@ public class AircraftState
     public float Current_Fuel_Weight_kg;
 
     public float Maximum_Fuel_Weight_kg;
+
+    public string? Type;
 
     //Could add engine stuff in the future, but I would need to work out all the specs
 
