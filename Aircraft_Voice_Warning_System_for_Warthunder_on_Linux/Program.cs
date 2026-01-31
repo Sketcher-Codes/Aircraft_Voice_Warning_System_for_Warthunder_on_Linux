@@ -23,9 +23,12 @@
 
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Aircraft_Voice_Warning_System_for_Warthunder_on_Linux;
 //Note that under 8111/indicators I can get type info if I want to set custom overrides.
@@ -60,6 +63,12 @@ class Program
 
     static private bool PrintDebug = false;
 
+    static private HudMSG_Result? EventDMGMessageData;
+
+    static private int LastEvent = 0;
+    static private int lastDmg = 0;
+
+    private static long LastMessageTime = 0;//So we don't repeat last message over and over.
 
 
     static void Main(string[] args)
@@ -109,6 +118,8 @@ class Program
                         PrintDebug = true;
                     }
             }
+
+            PrintDebug = true;
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.BackgroundColor = ConsoleColor.Black;
@@ -326,9 +337,73 @@ class Program
 
 
 
+        //Damage Reader
+
+
+
+        string HudMessageQueryString = "http://localhost:8111/hudmsg?lastEvt=" +  LastEvent + "&lastDmg=" + lastDmg;
+
+        DataInTask = DataInHttpClient.GetAsync(HudMessageQueryString);
+
+        DataInTask.Wait();
+
+        if (!DataInTask.IsCompletedSuccessfully)
+        {
+            return false;
+        }
+
+        DataInTaskResult = DataInTask.Result;
+
+        string ReadData = new System.IO.StreamReader(DataInTaskResult.Content.ReadAsStream()).ReadToEnd();
+
+        try{
+        EventDMGMessageData = System.Text.Json.JsonSerializer.Deserialize<HudMSG_Result>(ReadData);
+        } catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+        
+
+
+
+
+
 
         return true;
     }
+
+    class HudMSG_Result
+    {
+        //string [] Events;
+
+        [JsonInclude]
+        public DamageEvent? [] damage;
+
+        public class DamageEvent
+        {
+            [JsonInclude]
+            public int id;
+
+            [JsonInclude]
+            public string? msg;
+
+            [JsonInclude]
+            public string? sender;
+
+            [JsonInclude]
+            public bool enemy;
+
+            [JsonInclude]
+            public string? mode;
+
+            [JsonInclude]
+            public int time;
+
+        }
+
+    }
+
+    
 
 
 
@@ -454,7 +529,7 @@ class Program
 
     
 
-    
+    private static bool EngineFailureFlag = false;    
 
 
     //AI Disclaimer - function created by AI and edited by me
@@ -638,6 +713,16 @@ class Program
             }
         }
 
+        //Engine failure. Don't care about bingo if I have no engine. Not as critical as other immediate issues.
+        if(CurrentWarningLevel < 2)
+        {
+            if(EngineFailureFlag)
+            {
+                TheAudioPlayer.Play("./Engine_Failure.wav");    
+                CurrentWarningLevel = 2;
+                EngineFailureFlag = false;
+            }
+        }
 
         //Bingo - warning level 2
         //Not an immediate risk. Just a heya you're going to run out of fuel. So this is less priority than all the immediate danger warnings.
@@ -668,6 +753,71 @@ class Program
         //Technically if you respawn in a plane with less fuel things could get mixed up.
         CurrentFuelLastFuel = CurrentAircraftState.Current_Fuel_Weight_kg;    
         LastFuelMax = CurrentAircraftState.Maximum_Fuel_Weight_kg;
+
+
+        //Message tracking
+        if(EventDMGMessageData is not null)
+        {
+            if(EventDMGMessageData.damage is not null){
+                if(EventDMGMessageData.damage.Length <= 0)
+                {
+                    lastDmg = 0;//Reset if not avaliable
+                    LastMessageTime = 0;
+                }
+                else
+                {
+                    lastDmg = EventDMGMessageData.damage[EventDMGMessageData.damage.Length -1].id - 1;//Repeate last message
+                }
+                long MaxTime = -1;
+                foreach(HudMSG_Result.DamageEvent? HD in EventDMGMessageData.damage)
+                {
+                    if(HD is null)
+                    {
+                        continue;
+                    }
+
+                    MaxTime = MaxTime >= HD.time ? MaxTime : HD.time;//Just in cast two messages hit the same frame
+
+                    if(HD.time <= LastMessageTime)
+                    {
+                        continue;
+                    }
+                    
+                    var BackgroundColor = Console.BackgroundColor;
+                    var ForegroundColor = Console.ForegroundColor;
+
+                    if (HD.enemy)
+                    {
+                        BackgroundColor = ConsoleColor.Black;
+                        ForegroundColor = ConsoleColor.DarkRed;
+                    }
+                    else
+                    {
+                        BackgroundColor = ConsoleColor.Black;
+                        ForegroundColor = ConsoleColor.Magenta;
+                    }
+
+                    Console.WriteLine(HD.msg);
+
+
+                    string EngineFailureItem = "Engine died: ";
+                    if(HD.msg is not null){
+                        if(!HD.enemy && HD.msg.StartsWith(EngineFailureItem))
+                        {
+                            EngineFailureFlag = true;   
+                        }
+                    }
+
+
+                    Console.BackgroundColor = BackgroundColor;
+                    Console.ForegroundColor = ForegroundColor;
+                    
+                }
+
+                LastMessageTime = MaxTime;
+
+            }
+        }
 
 
         
@@ -777,6 +927,10 @@ class Program
 
         return true;
     }
+
+    
+
+
 
 
 

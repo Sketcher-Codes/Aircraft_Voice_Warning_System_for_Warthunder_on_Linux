@@ -2,7 +2,7 @@ OverGPositive|7.0
 OverGNegative|-5.0
 OverspeedThreshold|750.0
 Angle_Of_Attack_Threshold_Positive|18.0
-Angle_Of_Attack_Threshold_Negative|15.0
+Angle_Of_Attack_Threshold_Negative|-15.0
 Ignore_Angle_Of_Attack_Warning_Below_Speed|30.0
 Angle_Of_Slip_Threshold|10.0
 Any_Flaps_Limit|400.0
