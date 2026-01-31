@@ -1,0 +1,12 @@
+body{font-family:Arial,Helvetica,sans-serif;background:#111;color:#ddd;margin:8px}
+#container{max-width:1200px;margin:0 auto;float:right;}
+canvas{background:#0b1220;border:1px solid #333;display:block}
+#lower{display:flex;gap:12px;margin-top:12px; float:right;}
+#controlsColumn{display:flex;flex-direction:column;gap:8px}
+
+#rightColumn{display:flex;flex-direction:row;align-items:flex-start;gap:12px}
+#lights{display:flex;flex-direction:column;gap:8px;margin-left:8px}
+.lightLabel{width:120px;height:36px;border-radius:6px;background:#222;color:#888;display:flex;align-items:center;justify-content:center}
+.lightLabel.red{background:#8b0000;color:#fff}
+.lightLabel.flash{animation:flash 2s steps(120) infinite}
+@keyframes flash{0%{background:#222;color:#888}50%{background:#8b0000;color:#fff}100%{background:#222;color:#888}}

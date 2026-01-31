@@ -1,0 +1,36 @@
+<!--AI disclaimer - this whole file is generated with AI, I manually reordered some of the elements so that it can display nicely in the top right of an obs-recording when incorporated from a web-browser source.-->
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Aircraft Telemetry</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="container">
+    <canvas id="plot" width="1000" height="240"></canvas>
+
+    <div id="lower">
+        <div id="rightColumn">
+          <div id="lights">
+            <div class="lightRow"><div id="flapsLight" class="lightLabel">Flaps</div></div>
+            <div class="lightRow"><div id="gearLight" class="lightLabel">Gear</div></div>
+          </div>
+          <canvas id="aoa" width="180" height="180"></canvas>
+          <canvas id="gforce" width="180" height="180"></canvas>
+        </div>
+
+        <div id="controlsColumn">
+        <canvas id="controls" width="300" height="300"></canvas>
+        <canvas id="rudder" width="300" height="60"></canvas>
+      </div>
+
+
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

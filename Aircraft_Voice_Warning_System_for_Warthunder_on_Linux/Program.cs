@@ -56,7 +56,7 @@ class Program
     static private string [] ItemSplitters = new string [] {"\": "};
 
     
-    static private AircraftState? CurrentAircraftState;
+    static public AircraftState? CurrentAircraftState;
 
     static private AudioPlayer TheAudioPlayer = new AudioPlayer();
 
@@ -80,6 +80,8 @@ class Program
 
         //In future I could extend to have main loop run on a seperate thread and the possiblity for typing input into the console
         //E.g. manual calibration of barometric warning floor
+
+        WebServer.Start();
 
         RunMainLoop();
 
@@ -118,8 +120,6 @@ class Program
                         PrintDebug = true;
                     }
             }
-
-            PrintDebug = true;
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.BackgroundColor = ConsoleColor.Black;

@@ -6,5 +6,4 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- Use SDK defaults to include all C# files under the project folder and subfolders -->
 </Project>
